@@ -31,43 +31,52 @@
 define('INSIDE' , true);
 define('INSTALL' , false);
 require_once dirname(__FILE__) .'/application/bootstrap.php';
+$user = Wootook_Empire_Model_User::getSingleton();
+$db = Wootook_Database::getSingleton();
 
 	includeLang('buddy');
 
-$a = $_GET['a'];
-$e = $_GET['e'];
-$s = $_GET['s'];
-$u = intval( $_GET['u'] );
+$a = isset($_GET['a']) ? $_GET['a'] : null;
+$e = isset($_GET['e']) ? $_GET['e'] : null;
+$s = isset($_GET['s']) ? $_GET['s'] : null;
+$i = isset($_GET['i']) ? $_GET['i'] : null;
+$u = isset($_GET['u']) ? intval($_GET['u']) : null;
+$buddy_id = isset($_GET['bid']) ? intval($_GET['bid']) : null;
+$_POST["s"] = isset($_POST["s"]) ? intval($_POST["s"]) : null;
+$_POST["a"] = isset($_POST["a"]) ? intval($_POST["a"]) : null;
+$_POST["e"] = isset($_POST["e"]) ? intval($_POST["e"]) : null;
 
-if ( $s == 1 && isset( $_GET['bid'] ) ) {
-	// Effacer une entree de la liste d'amis
+if ( $s == 1 && $buddy_id ) {
+	/**
+	 * Delete a entry of buddy. 
+	 * This handles the members who are already buddy and the ones who are still in 'My requests'
+	 * It's a wierd code. $s is for delete a buddy, but when the active = 0, we actually accept the buddy.
+	 */
 	$bid = intval( $_GET['bid'] );
 
-	$buddy = doquery( "SELECT * FROM {{table}} WHERE `id` = '".$bid."';", 'buddy', true );
+	$buddy = doquery( "SELECT * FROM {{table}} WHERE `id` = '".$buddy_id."';", 'buddy', true );
 	if ( $buddy['owner'] == $user['id'] ) {
 		if ( $buddy['active'] == 0 && $a == 1 ) {
-			doquery( "DELETE FROM {{table}} WHERE `id` = '".$bid."';", 'buddy' );
+			doquery( "DELETE FROM {{table}} WHERE `id` = '".$buddy_id."';", 'buddy' );
 		} elseif ( $buddy['active'] == 1 ) {
-			doquery( "DELETE FROM {{table}} WHERE `id` = '".$bid."';", 'buddy' );
+			doquery( "DELETE FROM {{table}} WHERE `id` = '".$buddy_id."';", 'buddy' );
 		} elseif ( $buddy['active'] == 0 ) {
-			doquery( "UPDATE {{table}} SET `active` = '1' WHERE `id` = '".$bid."';", 'buddy' );
+			doquery( "UPDATE {{table}} SET `active` = '1' WHERE `id` = '".$buddy_id."';", 'buddy' );
 		}
 	} elseif ( $buddy['sender'] == $user['id'] ) {
-		doquery( "DELETE FROM {{table}} WHERE `id` = '".$bid."';", 'buddy' );
+		doquery( "DELETE FROM {{table}} WHERE `id` = '".$buddy_id."';", 'buddy' );
 	}
-} elseif ( $_POST["s"] == 3 && $_POST["a"] == 1 && $_POST["e"] == 1 && isset( $_POST["u"] ) ) {
+} elseif ( $_POST["s"] == 3 && $_POST["a"] == 1 && $_POST["e"] == 1 && isset($_POST["u"]) ) {
 	// Traitement de l'enregistrement de la demande d'entree dans la liste d'amis
-	$uid = $user["id"];
-	$u = intval( $_POST["u"] );
-
-	$buddy = doquery( "SELECT * FROM {{table}} WHERE sender={$uid} AND owner={$u} OR sender={$u} AND owner={$uid}", 'buddy', true );
+	$user_id = $user->getId();
+	$buddy = doquery( "SELECT * FROM {{table}} WHERE sender={$user_id} AND owner={$u} OR sender={$u} AND owner={$user_id}", 'buddy', true );
 
 	if ( !$buddy ) {
 		if ( strlen( $_POST['text'] ) > 5000 ) {
 			message( "Le texte ne doit pas faire plus de 5000 caract&egrave;res !", "Erreur" );
 		}
-		$text = mysql_escape_string( strip_tags( $_POST['text'] ) );
-		doquery( "INSERT INTO {{table}} SET sender={$uid}, owner={$u}, active=0, text='{$text}'", 'buddy' );
+		$message_text = $db->quote($_POST['text'])
+		doquery( "INSERT INTO {{table}} SET sender={$user_id}, owner={$u}, active=0, text='{$message_text}'", 'buddy' );
 		message( $lang['Request_sent'], $lang['Buddy_request'], 'buddy.php' );
 	} else {
 		message( $lang['A_request_exists_already_for_this_user'], $lang['Buddy_request'] );
@@ -161,9 +170,9 @@ while ( $b = $buddyrow->fetch(PDO::FETCH_BOTH) ) {
 	}
 
 	$i++;
-	$uid = ( $b["owner"] == $user["id"] ) ? $b["sender"] : $b["owner"];
+	$user_id = ( $b["owner"] == $user->getId() ) ? $b["sender"] : $b["owner"];
 	// query del user
-	$u = doquery( "SELECT id,username,galaxy,system,planet,onlinetime,ally_id,ally_name FROM {{table}} WHERE id=" . $uid, "users", true );
+	$u = doquery( "SELECT id,username,galaxy,system,planet,onlinetime,ally_id,ally_name FROM {{table}} WHERE id=" . $user_id, "users", true );
 	// $g = doquery("SELECT galaxy, system, planet FROM {{table}} WHERE id_planet=".$u["id_planet"],"galaxy",true);
 	// $a = doquery("SELECT * FROM {{table}} WHERE id=".$uid,"aliance",true);
 	if ( $u["ally_id"] != 0 ) { // Alianza
