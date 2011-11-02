@@ -160,6 +160,15 @@
                             'uri'   => 'messages.php'
                             )
                         ),
+					array(
+                        'method' => 'addLink',
+                        'params' => array(
+                            'name'  => 'tools/buddy',
+                            'label' => 'Buddy',
+                            'title' => 'Buddy',
+                            'uri'   => 'buddy.php'
+                            )
+                        ),
                     array(
                         'method' => 'addLink',
                         'params' => array(
