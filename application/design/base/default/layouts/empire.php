@@ -71,7 +71,7 @@
                             'name'  => 'development/officers',
                             'label' => 'Officers',
                             'title' => 'Officers',
-                            'uri'   => 'officers.php'
+                            'uri'   => 'officier.php'
                             )
                         ),
                     array(
